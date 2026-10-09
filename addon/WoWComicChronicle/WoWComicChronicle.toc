@@ -1,0 +1,6 @@
+## Interface: 20506
+## Title: WoW Comic Chronicle
+## Notes: Records quest and world events for comic generation
+## Version: 0.3.0
+## SavedVariablesPerCharacter: WCC_DB
+Core.lua
