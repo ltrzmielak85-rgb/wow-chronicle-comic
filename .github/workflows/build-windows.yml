@@ -7,8 +7,8 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v4.3.1
+      - uses: actions/setup-python@v5.6.0
         with:
           python-version: '3.12'
       - name: Install dependencies
@@ -16,7 +16,7 @@ jobs:
       - name: Build standalone app
         working-directory: desktop
         run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name WoWComicChronicle --collect-all mss --collect-all PIL main.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4.6.2
         with:
           name: WoWComicChronicle-Windows
           path: desktop/dist/WoWComicChronicle.exe
