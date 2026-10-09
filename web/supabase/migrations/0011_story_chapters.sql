@@ -23,5 +23,6 @@ create policy "read own chapter quests" on public.story_chapter_quests for selec
 -- Writes must be validated server-side: all candidate quests must belong to
 -- the chapter's character and be verified completed, with no cross-account IDs.
 alter table public.generation_requests add column if not exists chapter_id uuid references public.story_chapters(id);
+alter table public.generation_requests alter column candidate_id drop not null;
 alter table public.generation_requests add constraint generation_request_one_source
  check ((candidate_id is not null and chapter_id is null) or (candidate_id is null and chapter_id is not null));
