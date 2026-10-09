@@ -1,8 +1,7 @@
 import {NextRequest,NextResponse} from "next/server";
 import {parseSavedVariables} from "@/lib/lua-savedvariables";
 import {userClient} from "@/lib/supabase";
-import {z} from "zod";
-const eventSchema=z.object({seq:z.coerce.number().int().nonnegative(),ts:z.coerce.number().int().nonnegative().optional(),timestamp:z.coerce.number().int().nonnegative().optional(),kind:z.string().optional(),type:z.string().optional(),data:z.record(z.string(),z.unknown()).optional()});
+import {normalizeImportedEvents,previewCandidates} from "@/lib/quest-import";
 export async function POST(req:NextRequest){
  try{
   const token=req.headers.get("authorization")?.replace(/^Bearer /i,"");
@@ -17,11 +16,13 @@ export async function POST(req:NextRequest){
   const parsed=parseSavedVariables(await file.text());
   const raw=parsed.events;
   if(!raw||typeof raw!=="object")return NextResponse.json({error:"No events found"},{status:400});
-  const events=Object.values(raw).map(e=>eventSchema.parse(e)).slice(0,5000);
+  const rows=normalizeImportedEvents(raw);
   const {data:character,error}=await db.from("characters").upsert({user_id:user.id,name,realm,game_version:"tbc-anniversary"},{onConflict:"user_id,realm,name,game_version"}).select("id").single();
   if(error||!character)return NextResponse.json({error:"Could not save character"},{status:500});
-  const rows=events.map(e=>({character_id:character.id,seq:e.seq,event_time:new Date((e.ts??e.timestamp??0)*1000).toISOString(),event_type:e.kind??e.type??"unknown",payload:e.data??{}}));
-  if(rows.length){const {error:saveError}=await db.from("adventure_events").upsert(rows,{onConflict:"character_id,seq",ignoreDuplicates:true});if(saveError)return NextResponse.json({error:"Could not save events"},{status:500});}
-  return NextResponse.json({characterId:character.id,received:rows.length});
+  const eventRows=rows.map(e=>({...e,character_id:character.id}));
+  if(eventRows.length){const {error:saveError}=await db.from("adventure_events").upsert(eventRows,{onConflict:"character_id,seq",ignoreDuplicates:true});if(saveError)return NextResponse.json({error:"Could not save events"},{status:500});}
+  const {data:created,error:promotionError}=await db.rpc("refresh_quest_candidates",{p_character_id:character.id});
+  if(promotionError)return NextResponse.json({error:"Events saved but quest candidate refresh failed"},{status:500});
+  return NextResponse.json({characterId:character.id,received:rows.length,detectedCompletions:previewCandidates(rows).length,newCandidates:created});
  }catch{return NextResponse.json({error:"Invalid SavedVariables file"},{status:400});}
 }
