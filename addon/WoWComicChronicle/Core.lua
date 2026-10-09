@@ -55,17 +55,27 @@ f:SetScript("OnEvent",function(_,event,...)
     WCC_DB.events=WCC_DB.events or {}
     WCC_DB.quests=WCC_DB.quests or {}
     WCC_DB.seq=WCC_DB.seq or 0
+    WCC_DB.identity={name=UnitName("player"),realm=GetRealmName(),class=select(2,UnitClass("player")),level=UnitLevel("player")}
     print("|cff66ccff[WCC]|r TBC Anniversary recorder ready. /wcc")
     scan()
   elseif event=="QUEST_LOG_UPDATE" then scan()
   elseif event=="QUEST_ACCEPTED" then
     local a,b=...
-    emit(event,{questID=b or a})
+    local id=b or a
+    local q=id and WCC_DB.quests[tostring(id)]
+    emit(event,{questID=id,title=q and q.title or nil})
     scan()
   elseif event=="QUEST_TURNED_IN" then
     local id=...
-    emit(event,{questID=id})
-    local q=WCC_DB.quests[tostring(id)]
+    local q=id and WCC_DB.quests[tostring(id)]
+    if not q or not q.title then
+      scan()
+      q=id and WCC_DB.quests[tostring(id)]
+    end
+    if id then
+      WCC_DB.turnIns=WCC_DB.turnIns or {}
+      emit(event,{questID=id,title=q and q.title or nil,zone=GetRealZoneText()})
+    end
     if q then q.state="turned_in" end
   elseif event=="ZONE_CHANGED_NEW_AREA" then
     emit(event,{zone=GetRealZoneText(),subzone=GetSubZoneText()})
