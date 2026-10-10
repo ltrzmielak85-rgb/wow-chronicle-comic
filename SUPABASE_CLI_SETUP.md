@@ -6,7 +6,7 @@ The original 24 SQL files live in web/supabase/migrations as numbered source his
 
 1. Install Git, Node.js LTS, Docker Desktop and Supabase CLI (use `npx supabase` from project root if not globally installed).
 2. Clone `https://github.com/ltrzmielak85-rgb/wow-chronicle-comic.git` and open PowerShell in the repository root.
-3. Run `powershell -ExecutionPolicy Bypass -File scripts/prepare-supabase-migrations.ps1`.
+3. Run `npx supabase init` to create the local Supabase configuration (if already initialized, skip this step). Then run `powershell -ExecutionPolicy Bypass -File scripts/prepare-supabase-migrations.ps1`.
 4. Check that `supabase/migrations/` contains 24 files with 14-digit timestamp prefixes.
 5. Run `git add supabase/migrations && git commit -m "Prepare Supabase CLI migrations" && git push`.
 6. Start Docker Desktop, then run `npx supabase start` and `npx supabase db reset`. **Stop and fix errors if any migration fails.** This resets LOCAL development data only.
