@@ -1,0 +1,28 @@
+name: Supabase migration checks
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'web/supabase/migrations/**'
+      - 'scripts/prepare-supabase-migrations.ps1'
+      - '.github/workflows/supabase-check.yml'
+  workflow_dispatch:
+jobs:
+  migration-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Check canonical migrations exist
+        run: |
+          test -d supabase/migrations || { echo "Run scripts/prepare-supabase-migrations.ps1 and commit generated migrations first"; exit 1; }
+          test "$(find supabase/migrations -maxdepth 1 -name '*.sql' | wc -l)" -eq 24
+      - name: Validate migration filename format
+        shell: bash
+        run: |
+          for f in supabase/migrations/*.sql; do
+            [[ "$(basename "$f")" =~ ^[0-9]{14}_.+\.sql$ ]] || exit 1
+          done
+      # This job does not deploy. Local 'supabase db reset' tests SQL against Docker Postgres.
